@@ -1,0 +1,69 @@
+process Car:
+    espera estar cheio
+    ride();
+    esvazia
+
+process Passenger[n]:
+    espera conseguir entrar
+    espera o carro estar cheio
+    ride();
+    sinaliza saida do carro
+
+
+==================================
+
+int inCar = 0, numSeats = c , isIn[n] = 0, isOut[n] = 0;
+{BARRIER: inCar <= numSeats ^ isIn[n] <= isOut[n]}
+process Car:
+    while (true){
+        {BARRIER ^ inCar < numSeat}
+        while(inCar < numSeats){
+            <inCar = inCar + 1>
+        }
+        {BARRIER ^ inCar == numSeat}
+        if (inCar = numSeats){
+            ride();
+        }
+        <numSeats = numSeats + inCar;>
+        {BARRIER ^ inCar < numSeat}
+    }
+
+process Passenger[n]:
+    while(true){
+        {BARRIER ^ isIn[n] == isOut[n]}
+        <isIn[n] = isIn[n] + 1;>
+        {BARRIER ^ isIn[n] == isOut[n] + 1}
+        if(inCar = numSeats && isIn[n] > isOut[n]){        
+            ride();
+            <isOut[n] = isOut[n] + 1;>
+        }
+        {BARRIER ^ isIn[n] == isOut[n]}
+    }
+
+
+================comando await utilizado==================
+
+int inCar = 0, numSeats = c , isIn[n] = 0, isOut[n] = 0;
+{BARRIER: inCar <= numSeats ^ isIn[n] <= isOut[n]}
+process Car:
+    while (true){
+        {BARRIER ^ inCar < numSeat}
+        <await(inCar == numSeats)>
+        {BARRIER ^ inCar == numSeat}
+        ride();
+        <numSeats = numSeats + inCar;>
+        {BARRIER ^ inCar < numSeat}
+    }
+
+process Passenger[n]:
+    while (true){
+        {BARRIER ^ isIn[n] == isOut[n]}
+        <await(inCar < numSeats) isIn[n] = isIn[n] + 1;>
+        <inCar = inCar + 1>
+        {BARRIER ^ isIn[n] == isOut[n] + 1}
+        <await(inCar == numSeats && isIn[n] > isOut[n])>        
+        ride();
+        <await(numSeats > inCar) isOut[n] = isOut[n] + 1;>
+        {BARRIER ^ isIn[n] == isOut[n]}
+    }
+
